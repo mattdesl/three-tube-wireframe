@@ -72,6 +72,10 @@ Builds a new geometry from `baseGeo` using the given options:
   - `'diagonal0-horizontal'` or `'diagonal1-horizontal'` a mix of diagonal and horizontal lines
   - `'diagonal0-vertical'` or `'diagonal1-vertical'` a mix of diagonal and vertical lines
 
+#### `modes = createTubeWireframe.modes`
+
+A list of all the mode names (`'triangle'`, `'quad'`, etc) that can be passed into the options.
+
 ## License
 
 MIT, see [LICENSE.md](http://github.com/mattdesl/three-tube-wireframe/blob/master/LICENSE.md) for details.
