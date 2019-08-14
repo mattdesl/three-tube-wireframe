@@ -63,6 +63,8 @@ Builds a new geometry from `baseGeo` using the given options:
 
 - `matrix` (default identity) a `THREE.Matrix4` to apply to all segments as the geometry is being built
 
+- `filter` (default pass-through) a function that accepts `(index, mode)` parameters and returns true (accept face) or false (discard face). If the mode is anything except `'triangle'`, the index will be incremented in steps of 2.
+
 - `mode` (string, default `'triangle'`) a face layout mode, can be one of the following. Some geometries (such as `THREE.IcosahedronGeometry`) may produce unusual results with non-triangle modes.
   - `'triangle'` build triangles
   - `'quad'` attempt to organize into quads

@@ -21,10 +21,11 @@ module.exports.modes = modes;
 function createTubeWireframeGeometry (geometry, opt = {}) {
   const {
     matrix = new THREE.Matrix4(),
-    mode = 'triangle'
+    mode = 'triangle',
+    filter = () => true
   } = opt;
 
-  const cells = gatherCells(geometry, mode);
+  const cells = gatherCells(geometry, mode, filter);
 
   const allEdges = cells.map(cell => {
     return cell.map((current, i) => {
@@ -44,9 +45,11 @@ function createTubeWireframeGeometry (geometry, opt = {}) {
   return outGeometry;
 }
 
-function gatherCells (geometry, mode) {
+function gatherCells (geometry, mode, filter) {
   if (mode === 'triangle') {
-    return geometry.faces.map(face => {
+    return geometry.faces.filter((face, i) => {
+      return filter(i, mode);
+    }).map(face => {
       return [ face.a, face.b, face.c ];
     });
   }
@@ -55,6 +58,9 @@ function gatherCells (geometry, mode) {
   for (let i = 0; i < geometry.faces.length; i += 2) {
     const f0 = geometry.faces[i];
     const f1 = geometry.faces[i + 1];
+    if (!filter(i, mode)) {
+      continue;
+    }
     if (mode === 'cross-hatch') {
       cells.push([ f0.a, f1.b ]);
       cells.push([ f0.b, f1.c ]);
