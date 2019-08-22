@@ -51,7 +51,7 @@ It assumes `three` module is already installed and able to be required by your b
 
 #### `wireGeo = createTubeWireframe(baseGeo, opt = {})`
 
-Builds a new geometry from `baseGeo` using the given options:
+Builds a new THREE.Geometry from `baseGeo` using the given options:
 
 - `thickness` (default 1) thickness/radius of each individual tube
 
@@ -64,6 +64,8 @@ Builds a new geometry from `baseGeo` using the given options:
 - `matrix` (default identity) a `THREE.Matrix4` to apply to all segments as the geometry is being built
 
 - `filter` (default pass-through) a function that accepts `(index, mode)` parameters and returns true (accept face) or false (discard face). If the mode is anything except `'triangle'`, the index will be incremented in steps of 2.
+
+- `buffer` (defualt `false`) if `true`, returns a `THREE.BufferGeometry` with an additional `basePosition` attribute, which provides the positions of the original input `baseGeo` before wireframe expansion
 
 - `mode` (string, default `'triangle'`) a face layout mode, can be one of the following. Some geometries (such as `THREE.IcosahedronGeometry`) may produce unusual results with non-triangle modes.
   - `'triangle'` build triangles

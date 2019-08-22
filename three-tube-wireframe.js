@@ -1,4 +1,5 @@
 const THREE = require('three');
+const Tube = require('./lib/Tube');
 
 const tmpAxis = new THREE.Vector3();
 const modes = [
@@ -20,9 +21,9 @@ module.exports.modes = modes;
 
 function createTubeWireframeGeometry (geometry, opt = {}) {
   const {
-    matrix = new THREE.Matrix4(),
     mode = 'triangle',
-    filter = () => true
+    filter = () => true,
+    buffer = false
   } = opt;
 
   const cells = gatherCells(geometry, mode, filter);
@@ -35,14 +36,58 @@ function createTubeWireframeGeometry (geometry, opt = {}) {
   }).reduce((a, b) => a.concat(b), []);
 
   const edges = dedupeEdges(allEdges);
-  const outGeometry = new THREE.Geometry();
+
+  let offset = 0;
+  const mesh = {
+    index: [],
+    position: [],
+    basePosition: [],
+    normal: [],
+    uv: []
+  };
+
   edges.forEach(([ a, b ]) => {
     const start = geometry.vertices[a];
     const end = geometry.vertices[b];
     const tube = createDynamicTube(start, end, opt);
-    outGeometry.merge(tube, matrix);
+    const position = tube.getAttribute('position');
+    const normal = tube.getAttribute('normal');
+    const uv = tube.getAttribute('uv');
+    const basePosition = tube.getAttribute('basePosition');
+    const indices = tube.getIndex();
+    const vertexCount = position.count;
+
+    for (let i = 0; i < vertexCount; i++) {
+      pushVertex(mesh.position, position, i);
+      pushVertex(mesh.normal, normal, i);
+      pushVertex(mesh.uv, uv, i);
+      pushVertex(mesh.basePosition, basePosition, i);
+    }
+    for (let i = 0; i < indices.array.length; i++) {
+      const k = indices.array[i] + offset;
+      mesh.index.push(k);
+    }
+    offset += vertexCount;
+
+    tube.dispose();
   });
-  return outGeometry;
+
+  const outGeometry = new THREE.BufferGeometry();
+  outGeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(mesh.position), 3));
+  outGeometry.addAttribute('normal', new THREE.BufferAttribute(new Float32Array(mesh.normal), 3));
+  outGeometry.addAttribute('uv', new THREE.BufferAttribute(new Float32Array(mesh.uv), 2));
+  outGeometry.addAttribute('basePosition', new THREE.BufferAttribute(new Float32Array(mesh.basePosition), 3));
+  const UintArray = mesh.index.length > 65535 ? Uint32Array : Uint16Array;
+  outGeometry.setIndex(new THREE.BufferAttribute(new UintArray(mesh.index), 1));
+  if (buffer) return outGeometry;
+  else return new THREE.Geometry().fromBufferGeometry(outGeometry);
+}
+
+function pushVertex (array, attribute, index) {
+  for (let i = 0; i < attribute.itemSize; i++) {
+    const v = attribute.array[index * attribute.itemSize + i];
+    array.push(v);
+  }
 }
 
 function gatherCells (geometry, mode, filter) {
@@ -119,6 +164,7 @@ function dedupeEdges (edges) {
 
 function createDynamicTube (start, end, opt = {}) {
   const {
+    matrix,
     lengthSegments = 1,
     radiusSegments = 4,
     thickness = 1,
@@ -129,12 +175,13 @@ function createDynamicTube (start, end, opt = {}) {
 
   const dist = direction.length();
   const length = dist;
-  const geometry = new THREE.CylinderGeometry(thickness, thickness, length, radiusSegments, lengthSegments, openEnded);
+  const geometry = new Tube(start, end, thickness, thickness, length, radiusSegments, lengthSegments, openEnded);
   geometry.translate(0, length / 2, 0);
 
   const object = new THREE.Object3D();
   object.position.copy(start);
   quatFromDir(direction.clone().normalize(), object.quaternion);
+  if (matrix) object.applyMatrix(matrix);
   object.updateMatrix();
   geometry.applyMatrix(object.matrix);
   return geometry;
@@ -153,3 +200,6 @@ function quatFromDir (dir, quaternion = new THREE.Quaternion()) {
   }
   return quaternion;
 }
+
+
+
